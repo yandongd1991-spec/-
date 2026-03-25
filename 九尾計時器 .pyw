@@ -10,7 +10,7 @@ from PyQt6.QtGui import QGuiApplication, QFont, QIcon
 # ==================== 1. 自動更新術式 (PyQt6 版) ====================
 CURRENT_VERSION = "1.0"
 # 記得去 Pastebin 拿到你的 Raw 連結並替換這裡
-VERSION_URL = "https://raw.githubusercontent.com/yandongd1991-spec/-/main/version.txt" 
+VERSION_URL = "https://raw.githubusercontent.com/yandongd1991-spec/-/main/version.txt"
 DOWNLOAD_URL = "https://你的新版下載網址.com"
 
 def check_for_updates():
