@@ -12,7 +12,7 @@ CURRENT_VERSION = "1.1"
 # 這是你的雲端版本號網址
 VERSION_URL = "https://raw.githubusercontent.com/yandongd1991-spec/-/main/version.txt"
 # 這是點擊更新後跳轉的下載頁面
-DOWNLOAD_URL = "https://pan.baidu.com/s/1O9UUuRmoB0_Nfi7mHuvxUQ"
+DOWNLOAD_URL = "https://pan.baidu.com/s/1Ht1nfW35G1VbTybb-OhNmQ?pwd=qscy"
 
 def check_for_updates():
     try:
