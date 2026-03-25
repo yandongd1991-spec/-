@@ -3,11 +3,11 @@ import os
 import requests
 import webbrowser
 from PyQt6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
-                             QLineEdit, QPushButton, QLabel, QFrame, QMessageBox, QComboBox)
+                             QLineEdit, QPushButton, QLabel, QFrame, QMessageBox, QComboBox, QListView)
 from PyQt6.QtCore import QTimer, Qt, QPoint
 from PyQt6.QtGui import QGuiApplication, QIcon
 
-# ==================== 1. 自動更新術式 (強制更新) ====================
+# ==================== 1. 強制更新 ====================
 CURRENT_VERSION = "1.1"
 VERSION_URL = "https://raw.githubusercontent.com/yandongd1991-spec/-/main/version.txt"
 DOWNLOAD_URL = "https://pan.baidu.com/s/1O9UUuRmoB0_Nfi7mHuvxUQ"
@@ -15,25 +15,20 @@ DOWNLOAD_URL = "https://pan.baidu.com/s/1O9UUuRmoB0_Nfi7mHuvxUQ"
 def check_for_updates():
     try:
         response = requests.get(VERSION_URL, timeout=5)
-        latest_version = response.text.strip()
-        if latest_version > CURRENT_VERSION:
+        if response.text.strip() > CURRENT_VERSION:
             msg = QMessageBox()
             msg.setWindowTitle("版本過舊")
-            msg.setText(f"請更新至 v{latest_version} 以繼續使用")
-            msg.setStandardButtons(QMessageBox.StandardButton.Ok)
-            msg.button(QMessageBox.StandardButton.Ok).setText("前往下載")
+            msg.setText("請更新至最新版本以繼續使用")
             msg.exec()
             webbrowser.open(DOWNLOAD_URL)
             sys.exit()
-    except:
-        pass
+    except: pass
 
-# ==================== 2. 路徑定義 ====================
 def get_resource_path(relative_path):
-    if hasattr(sys, '_MEIPASS'):
-        return os.path.join(sys._MEIPASS, relative_path)
+    if hasattr(sys, '_MEIPASS'): return os.path.join(sys._MEIPASS, relative_path)
     return os.path.join(os.path.abspath("."), relative_path)
 
+# ==================== 2. 資料集 ====================
 BOSS_DATA = {
     "維多利亞": ["红宝王", "僵尸猴王", "蘑菇王", "巨居蟹", "沼泽巨鳄", "巴洛古", "樹妖王", "僵尸蘑菇王"],
     "天空之城": ["艾利杰"],
@@ -46,24 +41,19 @@ BOSS_DATA = {
 }
 CHANNELS = [f"CH {i}" for i in range(1, 21)]
 
-# ==================== 3. 介面元件類別 ====================
+# ==================== 3. 任務單元 (穩定版) ====================
 class TimerItem(QFrame):
-    def __init__(self, parent_app, area=None, boss=None):
+    def __init__(self, parent_app, area="維多利亞", boss=None, ch="CH 1"):
         super().__init__()
         self.parent_app = parent_app
-        self.setFixedWidth(340) 
+        self.setFixedSize(370, 30) 
         self.setStyleSheet("""
             QFrame { background-color: #2d2d2d; border: 1px solid #444; border-radius: 2px; }
-            /* 下拉選單：文字白色，保留白色箭頭 */
-            QComboBox { 
-                background: #1e1e1e; color: white; border: 1px solid #555; 
-                font-size: 10px; height: 18px; padding-left: 1px;
-            }
-            QComboBox QAbstractItemView {
-                background-color: #1e1e1e; color: white; selection-background-color: #444;
-            }
-            QLineEdit { background: #1e1e1e; color: #00ff00; border: 1px solid #555; font-weight: bold; font-size: 11px; height: 18px; }
-            QPushButton { background-color: #444; color: white; border-radius: 2px; font-weight: bold; font-size: 10px; }
+            QComboBox { background: #1e1e1e; color: white; border: 1px solid #555; font-size: 11px; padding-left: 5px; }
+            QComboBox::drop-down { width: 0px; border: 0px; }
+            QComboBox QAbstractItemView { background-color: #1e1e1e; color: white; selection-background-color: #444; border: 1px solid #555; outline: none; }
+            QLineEdit { background: #1e1e1e; color: #00ff00; border: 1px solid #555; font-weight: bold; font-size: 11px; }
+            QPushButton { background-color: #444; color: white; border-radius: 2px; font-weight: bold; font-size: 11px; }
             QPushButton#plus_btn { color: #ffcc00; }
             QPushButton#minus_btn { color: #44aaff; }
             QPushButton#close_btn { color: #ff4444; background-color: #383838; }
@@ -72,44 +62,57 @@ class TimerItem(QFrame):
         
         self.seconds = 1800 
         self.is_running = False
-        main_layout = QHBoxLayout()
-        main_layout.setContentsMargins(2, 2, 2, 2)
-        main_layout.setSpacing(2) # 緊湊間距
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(5, 0, 5, 0)
+        layout.setSpacing(4)
 
-        # 下拉選單
-        self.area_combo = QComboBox(); self.area_combo.setFixedWidth(50); self.area_combo.addItems(BOSS_DATA.keys())
-        self.boss_combo = QComboBox(); self.boss_combo.setFixedWidth(65)
-        initial_area = area if area else "維多利亞"
-        self.area_combo.setCurrentText(initial_area); self.update_boss_list(initial_area)
-        self.area_combo.currentTextChanged.connect(self.update_boss_list)
+        # 下拉選單共通設定 (鎖死寬度 + 去除滾動條)
+        def setup_combo(combo, w):
+            combo.setFixedSize(w, 22)
+            view = QListView()
+            view.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+            combo.setView(view)
+
+        self.area_combo = QComboBox(); setup_combo(self.area_combo, 60)
+        self.area_combo.addItems(BOSS_DATA.keys())
+        
+        self.boss_combo = QComboBox(); setup_combo(self.boss_combo, 80)
+        
+        self.ch_combo = QComboBox(); setup_combo(self.ch_combo, 55)
+        self.ch_combo.addItems(CHANNELS)
+
+        # --- 記憶賦值 ---
+        self.area_combo.setCurrentText(area)
+        self.update_boss_list(area)
         if boss: self.boss_combo.setCurrentText(boss)
-        
-        self.ch_combo = QComboBox(); self.ch_combo.setFixedWidth(40); self.ch_combo.addItems(CHANNELS)
-        self.time_display = QLineEdit("30:00"); self.time_display.setFixedWidth(36); self.time_display.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        
-        # 狀態標籤 (不固定寬度，讓它緊湊顯示)
-        self.unit_label = QLabel("分"); self.unit_label.setObjectName("unit_label")
+        self.ch_combo.setCurrentText(ch)
 
-        btn_sz = 17 
-        # 按鈕順序調整：+ 在左，- 在右
+        self.area_combo.currentTextChanged.connect(self.update_boss_list)
+        
+        self.time_display = QLineEdit("30:00")
+        self.time_display.setFixedSize(40, 22); self.time_display.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        self.unit_label = QLabel("分"); self.unit_label.setObjectName("unit_label")
+        self.unit_label.setFixedSize(55, 22); self.unit_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        btn_sz = 20
         self.plus_btn = QPushButton("+"); self.plus_btn.setObjectName("plus_btn"); self.plus_btn.setFixedSize(btn_sz, btn_sz)
         self.plus_btn.clicked.connect(lambda: self.adjust_time(600))
 
         self.minus_btn = QPushButton("-"); self.minus_btn.setObjectName("minus_btn"); self.minus_btn.setFixedSize(btn_sz, btn_sz)
         self.minus_btn.clicked.connect(lambda: self.adjust_time(-600))
         
-        self.start_btn = QPushButton("GO"); self.start_btn.setFixedSize(22, btn_sz)
+        self.start_btn = QPushButton("GO"); self.start_btn.setFixedSize(28, btn_sz)
         self.start_btn.clicked.connect(self.toggle_timer)
 
         self.close_btn = QPushButton("✕"); self.close_btn.setObjectName("close_btn"); self.close_btn.setFixedSize(btn_sz, btn_sz)
         self.close_btn.clicked.connect(self.remove_self)
 
-        # 依照你的要求順序添加
-        widgets = [self.area_combo, self.boss_combo, self.ch_combo, self.time_display, 
-                   self.unit_label, self.plus_btn, self.minus_btn, self.start_btn, self.close_btn]
-        for w in widgets: main_layout.addWidget(w)
+        for w in [self.area_combo, self.boss_combo, self.ch_combo, self.time_display, 
+                  self.unit_label, self.plus_btn, self.minus_btn, self.start_btn, self.close_btn]:
+            layout.addWidget(w)
 
-        self.setLayout(main_layout); self.timer = QTimer(); self.timer.timeout.connect(self.update_time)
+        self.timer = QTimer(); self.timer.timeout.connect(self.update_time)
 
     def update_boss_list(self, area_name):
         self.boss_combo.clear()
@@ -139,7 +142,7 @@ class TimerItem(QFrame):
     def remove_self(self):
         self.timer.stop(); self.parent_app.remove_item(self)
 
-# ==================== 4. 主視窗 ====================
+# ==================== 4. 主視窗 (記憶邏輯) ====================
 class BossTimerApp(QWidget):
     def __init__(self):
         super().__init__()
@@ -149,17 +152,37 @@ class BossTimerApp(QWidget):
         if os.path.exists(icon_path): self.setWindowIcon(QIcon(icon_path))
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Tool)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.main_layout = QVBoxLayout(); self.main_layout.setContentsMargins(0,0,0,0); self.main_layout.setSpacing(1) 
-        self.add_task("維多利亞", BOSS_DATA["維多利亞"][0])
+        
+        self.main_layout = QVBoxLayout(self); self.main_layout.setContentsMargins(0,0,0,0); self.main_layout.setSpacing(1) 
+        
+        # 初始化第一個
+        self.add_task()
+        
         self.add_btn = QPushButton("+ 新增任務")
-        self.add_btn.setFixedWidth(340); self.add_btn.clicked.connect(lambda: self.add_task())
+        self.add_btn.setFixedSize(370, 28)
+        self.add_btn.clicked.connect(self.click_add_memory)
         self.add_btn.setStyleSheet("background-color: #444; color: white; border-radius: 2px; font-weight: bold;")
+        
         self.main_layout.addWidget(self.add_btn)
-        self.setLayout(self.main_layout); self.center_on_screen(); self.old_pos = None
+        self.center_on_screen(); self.old_pos = None
 
-    def add_task(self, area=None, boss=None):
-        item = TimerItem(self, area, boss); self.items.append(item)
-        self.main_layout.insertWidget(self.main_layout.count() - 1, item); self.adjustSize()
+    def add_task(self, area="維多利亞", boss=None, ch="CH 1"):
+        item = TimerItem(self, area, boss, ch)
+        self.items.append(item)
+        self.main_layout.insertWidget(self.main_layout.count() - 1, item)
+        self.adjustSize()
+
+    def click_add_memory(self):
+        # 記憶邏輯：抓取最後一個 Item 的當前選項
+        if self.items:
+            last = self.items[-1]
+            self.add_task(
+                last.area_combo.currentText(),
+                last.boss_combo.currentText(),
+                last.ch_combo.currentText()
+            )
+        else:
+            self.add_task()
 
     def remove_item(self, item):
         if item in self.items:
@@ -169,7 +192,7 @@ class BossTimerApp(QWidget):
 
     def center_on_screen(self):
         screen = QGuiApplication.primaryScreen().availableGeometry()
-        self.move((screen.width() - 340) // 2, (screen.height() - self.height()) // 2)
+        self.move((screen.width() - 370) // 2, (screen.height() - self.height()) // 2)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton: self.old_pos = event.globalPosition().toPoint()
