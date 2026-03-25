@@ -8,7 +8,7 @@ from PyQt6.QtCore import QTimer, Qt, QPoint
 from PyQt6.QtGui import QGuiApplication, QFont, QIcon
 
 # ==================== 1. 自動更新術式 (PyQt6 版) ====================
-CURRENT_VERSION = "1.0"
+CURRENT_VERSION = "1.1"
 # 記得去 Pastebin 拿到你的 Raw 連結並替換這裡
 VERSION_URL = "https://raw.githubusercontent.com/yandongd1991-spec/-/main/version.txt"
 DOWNLOAD_URL = "https://pan.baidu.com/s/1O9UUuRmoB0_Nfi7mHuvxUQ"
