@@ -3,44 +3,32 @@ import os
 import requests
 import webbrowser
 from PyQt6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
-                             QLineEdit, QPushButton, QLabel, QFrame, QMessageBox, QComboBox, QToolTip)
+                             QLineEdit, QPushButton, QLabel, QFrame, QMessageBox, QComboBox)
 from PyQt6.QtCore import QTimer, Qt, QPoint
-from PyQt6.QtGui import QGuiApplication, QFont, QIcon
+from PyQt6.QtGui import QGuiApplication, QIcon
 
-# ==================== 1. 自動更新術式 (強制更新版) ====================
+# ==================== 1. 自動更新術式 (強制更新) ====================
 CURRENT_VERSION = "1.1"
 VERSION_URL = "https://raw.githubusercontent.com/yandongd1991-spec/-/main/version.txt"
 DOWNLOAD_URL = "https://pan.baidu.com/s/1O9UUuRmoB0_Nfi7mHuvxUQ"
 
 def check_for_updates():
     try:
-        # 嘗試獲取遠端版本號
         response = requests.get(VERSION_URL, timeout=5)
         latest_version = response.text.strip()
-        
         if latest_version > CURRENT_VERSION:
-            # 強制更新彈窗：只有一個「確定更新」按鈕
             msg = QMessageBox()
-            msg.setWindowTitle("版本過舊 - 強制更新")
-            msg.setText(f"檢測到新版本 v{latest_version}！")
-            msg.setInformativeText("目前版本已停用，請務必下載新版後再使用。")
+            msg.setWindowTitle("版本過舊")
+            msg.setText(f"請更新至 v{latest_version} 以繼續使用")
             msg.setStandardButtons(QMessageBox.StandardButton.Ok)
-            msg.button(QMessageBox.StandardButton.Ok).setText("前往下載新版")
-            
-            # 執行彈窗
+            msg.button(QMessageBox.StandardButton.Ok).setText("前往下載")
             msg.exec()
-            
-            # 用戶點完之後，打開網頁並「關閉程式」
             webbrowser.open(DOWNLOAD_URL)
-            sys.exit() # 這是核心：強制結束程式，不讓它跑後面的主視窗
-            return True
-    except Exception as e:
-        # 如果網路斷了或檢查失敗，為了不影響使用，通常放行。
-        # 如果你連沒網路都要禁用，就在這裡也寫 sys.exit()。
-        print(f"檢查更新失敗: {e}")
-    return False
+            sys.exit()
+    except:
+        pass
 
-# ==================== 2. 路徑與資料定義 ====================
+# ==================== 2. 路徑定義 ====================
 def get_resource_path(relative_path):
     if hasattr(sys, '_MEIPASS'):
         return os.path.join(sys._MEIPASS, relative_path)
@@ -66,13 +54,13 @@ class TimerItem(QFrame):
         self.setFixedWidth(340) 
         self.setStyleSheet("""
             QFrame { background-color: #2d2d2d; border: 1px solid #444; border-radius: 2px; }
+            /* 下拉選單：文字白色，保留白色箭頭 */
             QComboBox { 
                 background: #1e1e1e; color: white; border: 1px solid #555; 
                 font-size: 10px; height: 18px; padding-left: 1px;
             }
-            QComboBox::drop-down { width: 0px; border: none; }
             QComboBox QAbstractItemView {
-                background-color: #1e1e1e; color: white; selection-background-color: #444; outline: none;
+                background-color: #1e1e1e; color: white; selection-background-color: #444;
             }
             QLineEdit { background: #1e1e1e; color: #00ff00; border: 1px solid #555; font-weight: bold; font-size: 11px; height: 18px; }
             QPushButton { background-color: #444; color: white; border-radius: 2px; font-weight: bold; font-size: 10px; }
@@ -85,25 +73,30 @@ class TimerItem(QFrame):
         self.seconds = 1800 
         self.is_running = False
         main_layout = QHBoxLayout()
-        main_layout.setContentsMargins(2, 2, 2, 2); main_layout.setSpacing(1) 
+        main_layout.setContentsMargins(2, 2, 2, 2)
+        main_layout.setSpacing(2) # 緊湊間距
 
+        # 下拉選單
         self.area_combo = QComboBox(); self.area_combo.setFixedWidth(50); self.area_combo.addItems(BOSS_DATA.keys())
         self.boss_combo = QComboBox(); self.boss_combo.setFixedWidth(65)
         initial_area = area if area else "維多利亞"
         self.area_combo.setCurrentText(initial_area); self.update_boss_list(initial_area)
-        if boss: self.boss_combo.setCurrentText(boss)
         self.area_combo.currentTextChanged.connect(self.update_boss_list)
+        if boss: self.boss_combo.setCurrentText(boss)
         
-        self.ch_combo = QComboBox(); self.ch_combo.setFixedWidth(35); self.ch_combo.addItems(CHANNELS)
+        self.ch_combo = QComboBox(); self.ch_combo.setFixedWidth(40); self.ch_combo.addItems(CHANNELS)
         self.time_display = QLineEdit("30:00"); self.time_display.setFixedWidth(36); self.time_display.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.unit_label = QLabel("分"); self.unit_label.setObjectName("unit_label"); self.unit_label.setFixedWidth(55) 
+        
+        # 狀態標籤 (不固定寬度，讓它緊湊顯示)
+        self.unit_label = QLabel("分"); self.unit_label.setObjectName("unit_label")
 
         btn_sz = 17 
-        self.minus_btn = QPushButton("-"); self.minus_btn.setObjectName("minus_btn"); self.minus_btn.setFixedSize(btn_sz, btn_sz)
-        self.minus_btn.clicked.connect(lambda: self.adjust_time(-600))
-
+        # 按鈕順序調整：+ 在左，- 在右
         self.plus_btn = QPushButton("+"); self.plus_btn.setObjectName("plus_btn"); self.plus_btn.setFixedSize(btn_sz, btn_sz)
         self.plus_btn.clicked.connect(lambda: self.adjust_time(600))
+
+        self.minus_btn = QPushButton("-"); self.minus_btn.setObjectName("minus_btn"); self.minus_btn.setFixedSize(btn_sz, btn_sz)
+        self.minus_btn.clicked.connect(lambda: self.adjust_time(-600))
         
         self.start_btn = QPushButton("GO"); self.start_btn.setFixedSize(22, btn_sz)
         self.start_btn.clicked.connect(self.toggle_timer)
@@ -111,8 +104,11 @@ class TimerItem(QFrame):
         self.close_btn = QPushButton("✕"); self.close_btn.setObjectName("close_btn"); self.close_btn.setFixedSize(btn_sz, btn_sz)
         self.close_btn.clicked.connect(self.remove_self)
 
-        for w in [self.area_combo, self.boss_combo, self.ch_combo, self.time_display, self.unit_label, self.minus_btn, self.plus_btn, self.start_btn, self.close_btn]:
-            main_layout.addWidget(w)
+        # 依照你的要求順序添加
+        widgets = [self.area_combo, self.boss_combo, self.ch_combo, self.time_display, 
+                   self.unit_label, self.plus_btn, self.minus_btn, self.start_btn, self.close_btn]
+        for w in widgets: main_layout.addWidget(w)
+
         self.setLayout(main_layout); self.timer = QTimer(); self.timer.timeout.connect(self.update_time)
 
     def update_boss_list(self, area_name):
@@ -126,11 +122,11 @@ class TimerItem(QFrame):
         if not self.is_running:
             self.timer.start(1000); self.start_btn.setText("||")
             self.start_btn.setStyleSheet("background-color: #2e7d32; color: white;")
-            self.unit_label.setText("九尾哥哥"); self.unit_label.setStyleSheet("color: #00ff00; font-weight: bold; border: none; background: transparent;")
+            self.unit_label.setText("九尾哥哥"); self.unit_label.setStyleSheet("color: #00ff00; font-weight: bold;")
         else:
             self.timer.stop(); self.start_btn.setText("GO")
             self.start_btn.setStyleSheet("background-color: #444; color: white;")
-            self.unit_label.setText("分"); self.unit_label.setStyleSheet("color: #777; font-weight: normal; border: none; background: transparent;")
+            self.unit_label.setText("分"); self.unit_label.setStyleSheet("color: #777; font-weight: normal;")
         self.is_running = not self.is_running
 
     def update_display(self):
@@ -183,13 +179,9 @@ class BossTimerApp(QWidget):
             delta = QPoint(event.globalPosition().toPoint() - self.old_pos)
             self.move(self.x() + delta.x(), self.y() + delta.y()); self.old_pos = event.globalPosition().toPoint()
 
-# ==================== 5. 啟動入口 ====================
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    
-    # 這是最強制的一道鎖：檢查更新，如果不通過，程式會在這裡直接結束
     check_for_updates()
-    
     window = BossTimerApp()
     window.show()
     sys.exit(app.exec())
