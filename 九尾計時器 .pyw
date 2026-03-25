@@ -9,8 +9,9 @@ from PyQt6.QtGui import QGuiApplication, QFont, QIcon
 
 # ==================== 1. 自動更新術式 (PyQt6 版) ====================
 CURRENT_VERSION = "1.1"
-# 記得去 Pastebin 拿到你的 Raw 連結並替換這裡
+# 這是你的雲端版本號網址
 VERSION_URL = "https://raw.githubusercontent.com/yandongd1991-spec/-/main/version.txt"
+# 這是點擊更新後跳轉的下載頁面
 DOWNLOAD_URL = "https://pan.baidu.com/s/1O9UUuRmoB0_Nfi7mHuvxUQ"
 
 def check_for_updates():
@@ -62,14 +63,27 @@ class TimerItem(QFrame):
         self.setFixedWidth(340) 
         self.setStyleSheet("""
             QFrame { background-color: #2d2d2d; border: 1px solid #444; border-radius: 2px; }
+            
+            /* 下拉選單主體：文字改為白色 */
             QComboBox { 
                 background: #1e1e1e; color: white; border: 1px solid #555; 
                 font-size: 10px; height: 18px; padding-left: 1px;
             }
+            
+            /* 下拉展開後的清單：背景深色、文字白色 */
+            QComboBox QAbstractItemView {
+                background-color: #1e1e1e;
+                color: white;
+                selection-background-color: #444;
+                outline: none;
+            }
+
             QLineEdit { background: #1e1e1e; color: #00ff00; border: 1px solid #555; font-weight: bold; font-size: 11px; height: 18px; }
             QPushButton { background-color: #444; color: white; border-radius: 2px; font-weight: bold; font-size: 10px; }
             QPushButton#plus_btn { color: #ffcc00; }
             QPushButton#close_btn { color: #ff4444; background-color: #383838; }
+            
+            /* 預設的單位標籤顏色 */
             QLabel#unit_label { color: #777; font-size: 10px; border: none; background: transparent; }
         """)
         
@@ -100,6 +114,7 @@ class TimerItem(QFrame):
 
         btn_sz = 17 
         self.plus_btn = QPushButton("+"); self.plus_btn.setFixedSize(btn_sz, btn_sz)
+        self.plus_btn.setObjectName("plus_btn")
         self.plus_btn.clicked.connect(lambda: self.adjust_time(600))
         
         self.start_btn = QPushButton("GO"); self.start_btn.setFixedSize(22, btn_sz)
@@ -129,13 +144,18 @@ class TimerItem(QFrame):
         if not self.is_running:
             self.timer.start(1000)
             self.start_btn.setText("||")
-            self.start_btn.setStyleSheet("background-color: #722;")
+            # 啟動時按鈕變綠色背景
+            self.start_btn.setStyleSheet("background-color: #2e7d32; color: white;")
             self.unit_label.setText("九尾哥哥")
+            # 「九尾哥哥」文字變綠色加粗
+            self.unit_label.setStyleSheet("color: #00ff00; font-weight: bold; border: none; background: transparent;")
         else:
             self.timer.stop()
             self.start_btn.setText("GO")
-            self.start_btn.setStyleSheet("background-color: #444;")
+            # 停止時恢復灰色背景
+            self.start_btn.setStyleSheet("background-color: #444; color: white;")
             self.unit_label.setText("分")
+            self.unit_label.setStyleSheet("color: #777; font-weight: normal; border: none; background: transparent;")
         self.is_running = not self.is_running
 
     def update_display(self):
@@ -172,6 +192,8 @@ class BossTimerApp(QWidget):
         
         self.add_btn = QPushButton("+ 新增任務")
         self.add_btn.setFixedWidth(340); self.add_btn.clicked.connect(lambda: self.add_task())
+        self.add_btn.setStyleSheet("background-color: #444; color: white; border-radius: 2px; font-weight: bold;")
+        
         self.main_layout.addWidget(self.add_btn)
         self.setLayout(self.main_layout); self.center_on_screen(); self.old_pos = None
 
