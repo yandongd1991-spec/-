@@ -11,7 +11,8 @@ from PyQt6.QtGui import QGuiApplication, QFont, QIcon
 CURRENT_VERSION = "1.0"
 # 記得去 Pastebin 拿到你的 Raw 連結並替換這裡
 VERSION_URL = "https://raw.githubusercontent.com/yandongd1991-spec/-/main/version.txt"
-DOWNLOAD_URL = "https://github.com/yandongd1991-spec/-/releases/tag/%E4%B9%9D%E5%B0%BE%E8%A8%88%E6%99%82%E5%99%A8"
+DOWNLOAD_URL = "通过网盘分享的文件：九尾計時器.exe
+链接: https://pan.baidu.com/s/1O9UUuRmoB0_Nfi7mHuvxUQ 提取码: 7pm1"
 
 def check_for_updates():
     try:
